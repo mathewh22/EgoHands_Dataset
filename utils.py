@@ -8,6 +8,7 @@ import torchvision
 from dataset import EgoHandsDataset
 from get_meta_by import get_meta_by
 from torch.utils.data import DataLoader
+from torchmetrics.classification import BinaryJaccardIndex
 
 def save_checkpoint(state, filename="my_checkpoint.pth.tar"):
     """save_checkpoint saves a checkpoint for a trained model"""
@@ -104,3 +105,24 @@ def save_predictions_as_imgs(
 
         print(y.shape)
     model.train()
+
+def test(loader, model, loss, device = "cuda)"):
+    model.eval()
+
+    test_loss, test_acc  = 0, 0
+    metric = BinaryJaccardIndex()
+
+    with torch.inference_mode():
+        for idx, (X, y) in enumerate(loader):
+            X, y = X.to(device=device), y.to(device=device)
+            test_outputs = model(X)
+            batch_loss = loss(test_outputs, y.long())
+            test_loss+=batch_loss.item()
+
+            test_outputs = torch.argmax(test_outputs, dim=1).detach() ## removed .cpu
+            test_acc += metric(test_outputs, y.long()) 
+            # add test acc
+        
+    test_loss = test_loss/len(loader)
+    test_acc = test_acc/len(loader)
+    return test_loss, test_acc

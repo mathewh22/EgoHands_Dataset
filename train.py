@@ -8,6 +8,7 @@ by setting LOAD_MODEL to either True (use the checkpoint) or False(retrain the m
 
 import torch
 import albumentations as A
+from torchmetrics.classification import BinaryJaccardIndex
 from albumentations.pytorch import ToTensorV2
 from tqdm import tqdm
 import torch.nn as nn
@@ -18,7 +19,7 @@ from utils import (
     save_checkpoint,
     get_loaders,
     # check_accuracy,
-    save_predictions_as_imgs,
+    save_predictions_as_imgs,test
 )
 
 # Hyperparameters etc.
@@ -36,6 +37,7 @@ def train_fn(loader, model, optimizer, loss_fn, scaler):
     """train_fn trains the model in model.py with the specified loader, model
     optimizer, loss function, and scaler value
     """
+    train_acc, train_loss = 0, 0
 
     loop = tqdm(loader)
 
@@ -46,8 +48,18 @@ def train_fn(loader, model, optimizer, loss_fn, scaler):
 
         # forward
         with torch.cuda.amp.autocast():
+            
+            loss = loss_fn(predictions, targets)
+            train_loss += loss.item()
+        
+
+
+
             predictions = model(data)
             loss = loss_fn(predictions, targets)
+            metric = BinaryJaccardIndex()
+            train_acc+= metric(predictions, targets)
+
 
         # backward
         optimizer.zero_grad()
@@ -57,12 +69,19 @@ def train_fn(loader, model, optimizer, loss_fn, scaler):
 
         # update tqdm loop
         loop.set_postfix(loss=loss.item())
+        return train_acc, train_loss
 
 def main():
     """
     main executes the program, starting off by defining transformations needed for the datasets,
     and calling functions to train and test the model
     """
+    results={
+        "train_loss": [],
+        "train_acc": [],
+        "test_loss": [],
+        "test_acc": []
+    }
 
     train_transform = A.Compose(
         [
@@ -111,7 +130,8 @@ def main():
     for epoch in range(NUM_EPOCHS):
 
         if LOAD_MODEL is not True:
-            train_fn(train_loader, model, optimizer, loss_fn, scaler)
+            train_acc, train_loss = train_fn(train_loader, model, optimizer, loss_fn, scaler)
+        
 
             # save model
             checkpoint = {
@@ -119,7 +139,11 @@ def main():
                 "optimizer":optimizer.state_dict(),
             }
             save_checkpoint(checkpoint)
-
+        test_loss, test_acc = test(val_loader, model, loss_fn)
+        results["train_acc"] = train_acc
+        results["train_loss"] = train_loss
+        results["test_acc"]=test_acc
+        results["test_loss"]= test_loss
         # check accuracy
         # check_accuracy(val_loader, model, device=DEVICE)
 
