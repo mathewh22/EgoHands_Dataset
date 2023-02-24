@@ -9,6 +9,7 @@ from dataset import EgoHandsDataset
 from get_meta_by import get_meta_by
 from torch.utils.data import DataLoader
 from torchmetrics.classification import BinaryJaccardIndex
+import matplotlib as plt
 
 def save_checkpoint(state, filename="my_checkpoint.pth.tar"):
     """save_checkpoint saves a checkpoint for a trained model"""
@@ -126,3 +127,10 @@ def test(loader, model, loss, device = "cuda)"):
     test_loss = test_loss/len(loader)
     test_acc = test_acc/len(loader)
     return test_loss, test_acc
+
+def visualize (test_acc, train_acc):
+    fig, (ax1,ax2) = plt.subplot(2,1)
+    ax1.set_ylabel('test accuracy')
+    ax2.set_ylabel('train accuracy')
+    ax2.set_xlabel('Epochs')
+    #convert test_acc and train_acc into arrays and plot based on epochs
