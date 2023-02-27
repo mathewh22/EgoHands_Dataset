@@ -19,7 +19,8 @@ from utils import (
     save_checkpoint,
     get_loaders,
     # check_accuracy,
-    save_predictions_as_imgs,test
+    save_predictions_as_imgs,test,
+    visualize
 )
 
 # Hyperparameters etc.
@@ -51,15 +52,11 @@ def train_fn(loader, model, optimizer, loss_fn, scaler):
             
             loss = loss_fn(predictions, targets)
             train_loss += loss.item()
-        
-
-
 
             predictions = model(data)
             loss = loss_fn(predictions, targets)
             metric = BinaryJaccardIndex()
             train_acc+= metric(predictions, targets)
-
 
         # backward
         optimizer.zero_grad()
@@ -140,10 +137,10 @@ def main():
             }
             save_checkpoint(checkpoint)
         test_loss, test_acc = test(val_loader, model, loss_fn)
-        results["train_acc"] = train_acc
-        results["train_loss"] = train_loss
-        results["test_acc"]=test_acc
-        results["test_loss"]= test_loss
+        results["train_acc"].append( train_acc)
+        results["train_loss"].append(train_loss)
+        results["test_acc"].append(test_acc)
+        results["test_loss"].append(test_loss)
         # check accuracy
         # check_accuracy(val_loader, model, device=DEVICE)
 
@@ -151,6 +148,7 @@ def main():
         save_predictions_as_imgs(
             val_loader, model, folder="saved_images/", device=DEVICE
         )
+    visualize(train_acc, train_loss)
 
 
 if __name__ == "__main__":

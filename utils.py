@@ -10,6 +10,7 @@ from get_meta_by import get_meta_by
 from torch.utils.data import DataLoader
 from torchmetrics.classification import BinaryJaccardIndex
 import matplotlib as plt
+import numpy as np
 
 def save_checkpoint(state, filename="my_checkpoint.pth.tar"):
     """save_checkpoint saves a checkpoint for a trained model"""
@@ -128,9 +129,19 @@ def test(loader, model, loss, device = "cuda)"):
     test_acc = test_acc/len(loader)
     return test_loss, test_acc
 
-def visualize (test_acc, train_acc):
+def visualize (test_acc_arr, train_acc_arr):
     fig, (ax1,ax2) = plt.subplot(2,1)
-    ax1.set_ylabel('test accuracy')
-    ax2.set_ylabel('train accuracy')
+    ax1.set_ylabel('Test Accuracy')
+    ax2.set_ylabel('Train Accuracy')
     ax2.set_xlabel('Epochs')
+    np_test_arr = np.empty([1,1])
+    np_train_arr = np.empty([1,1])
     #convert test_acc and train_acc into arrays and plot based on epochs
+    #train and test should have same # of epochs
+    for i in range (len(test_acc_arr)):
+        np.append(np_test_arr, test_acc_arr[i].numpy())
+        np.append(np_train_arr, train_acc_arr[i].numpy())
+    #plots as a scatter right now, seeing how to connect the dots
+    for i in range (len(np_test_arr)):
+        ax1.plot(i, np_test_arr[i], marker ='o')
+        ax2.plot(i, np_test_arr[i], marker= 'o')
